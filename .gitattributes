@@ -1,0 +1,2 @@
+*.mq4 filter=utf16
+*.mqh filter=utf16

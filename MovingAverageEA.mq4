@@ -1,4 +1,4 @@
-ï»¿//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //|                                              MovingAverageEA.mq4 |
 //|                             Copyright 2017, Code-Hamamatsu Corp. |
 //|                                             https://www.mql5.com |
@@ -10,24 +10,27 @@
 
 //--- input parameters
 
-input int      MAPeriod = 200;      //ç§»å‹•å¹³å‡ç·šã®æœŸé–“
-input int      MarginPips = 30;     //ä¸Šä¸‹ã«å–ã‚‹Pips
-input int      TP = 10;             //ãƒªãƒŸãƒƒãƒˆï¼ˆPipsï¼‰
-input int      SL = 30;             //ã‚¹ãƒˆãƒƒãƒ—ï¼ˆPipsï¼‰
-input double   InitialLots = 0.01;  //åˆæœŸãƒ­ãƒƒãƒˆ
-input int      MagicNumber = 68451; //ãƒžã‚¸ãƒƒã‚¯ãƒŠãƒ³ãƒãƒ¼
+input int      MAPeriod = 200;      //ˆÚ“®•½‹Ïü‚ÌŠúŠÔ
+input int      MarginPips = 30;     //ã‰º‚ÉŽæ‚éPips
+input int      TP = 10;             //ƒŠƒ~ƒbƒgiPipsj
+input int      SL = 30;             //ƒXƒgƒbƒviPipsj
+input double   InitialLots = 0.01;  //‰Šúƒƒbƒg
+input int      MagicNumber = 68451; //ƒ}ƒWƒbƒNƒiƒ“ƒo[
 
 int            g_consecutive_loss;
 double         g_OnePipValue;
 double         g_StopLossValue,g_TakeProfitValue;
 
 enum StateOfRate{
-   InTheBand=0,
-   AboveBand=1,
-   BelowBand=2,
+   OverTheMA=0,
+   UnderTheMA=1,
+   AboveBand=2,
+   BelowBand=3,
 };
 
-StateOfRate State = InTheBand;
+StateOfRate State;
+
+int DigitOfLots = (int)(-1 * MathLog10(MarketInfo(Symbol(),MODE_MINLOT)));
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -54,6 +57,7 @@ void OnDeinit(const int reason)
 void OnTick()
 {
    static double balance = AccountBalance();
+   static bool   allow_trade = true;
 
    if(balance!=AccountBalance())
    {
@@ -62,6 +66,7 @@ void OnTick()
          if(balance > AccountBalance())
          {
             g_consecutive_loss++;
+            allow_trade = false;
          }
          else if(balance < AccountBalance())
          {
@@ -72,7 +77,7 @@ void OnTick()
    }
 
    CheckRateCondition();
-
+   Comment(TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES) + " \n" + "Consecutive loss=",g_consecutive_loss," allow trade=",allow_trade," State=",EnumToString(State));
    static StateOfRate PreState = State;
 
    double LowerBand = NormalizeDouble((iMA(Symbol(),PERIOD_CURRENT,MAPeriod,0,MODE_EMA,PRICE_CLOSE,0) - MarginPips * g_OnePipValue),Digits);
@@ -80,9 +85,9 @@ void OnTick()
 
    if(PreState != State)
    {
-      if(!HavePosition())
+      if(!HavePosition() && allow_trade)
       {
-         if(PreState == InTheBand && State == BelowBand)
+         if((PreState == OverTheMA || PreState == UnderTheMA) && State == BelowBand)
          {
             double Lots = GetLots(g_consecutive_loss);
             //write long stop order routine
@@ -90,7 +95,7 @@ void OnTick()
             g_TakeProfitValue = NormalizeDouble(LowerBand + TP * g_OnePipValue,Digits);
             bool a = OrderSend(Symbol(),OP_BUYSTOP,Lots,LowerBand,3,g_StopLossValue,g_TakeProfitValue,"",MagicNumber);
          }
-         else if(PreState == InTheBand && State == AboveBand)
+         else if((PreState == OverTheMA || PreState == UnderTheMA) && State == AboveBand)
          {
             double Lots = GetLots(g_consecutive_loss);
             //write short stop order routine
@@ -98,6 +103,14 @@ void OnTick()
             g_TakeProfitValue = NormalizeDouble(UPperBand - TP * g_OnePipValue,Digits);
             bool a = OrderSend(Symbol(),OP_SELLSTOP,Lots,UPperBand,3,g_StopLossValue,g_TakeProfitValue,"",MagicNumber);
          }
+      }
+      if((PreState == OverTheMA || PreState == AboveBand) && State == UnderTheMA)
+      {
+         allow_trade = true;
+      }
+      else if((PreState == UnderTheMA || PreState == BelowBand) && State == OverTheMA)
+      {
+         allow_trade = true;
       }
       PreState = State;
    }
@@ -113,12 +126,14 @@ double GetLots(int loss_count)
       lots = previous_lots + lots * (SL/TP);
       previous_lots = lots;
    }
+   lots = NormalizeDouble(lots,DigitOfLots);
    return(lots);
 }
 
 void CheckRateCondition()
 {
    double LowerBand = iMA(Symbol(),PERIOD_CURRENT,MAPeriod,0,MODE_EMA,PRICE_CLOSE,0) - MarginPips * g_OnePipValue;
+   double CenterMA  = iMA(Symbol(),PERIOD_CURRENT,MAPeriod,0,MODE_EMA,PRICE_CLOSE,0);
    double UPperBand = iMA(Symbol(),PERIOD_CURRENT,MAPeriod,0,MODE_EMA,PRICE_CLOSE,0) + MarginPips * g_OnePipValue;
    if(Ask <= LowerBand)
    {
@@ -128,9 +143,13 @@ void CheckRateCondition()
    {
       State = AboveBand;
    }
-   else
+   else if(Bid < CenterMA && Bid > LowerBand)
    {
-      State = InTheBand;
+      State = UnderTheMA;
+   }
+   else if(Bid >= CenterMA && Bid < UPperBand)
+   {
+      State = OverTheMA;
    }
 }
 
