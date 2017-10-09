@@ -17,6 +17,8 @@ input int      SL = 30;             //ストップ（Pips）
 input double   InitialLots = 0.01;  //初期ロット
 input int      MagicNumber = 68451; //マジックナンバー
 
+input bool     DebugMode=false;
+
 int            g_consecutive_loss;
 double         g_OnePipValue;
 double         g_StopLossValue,g_TakeProfitValue;
@@ -77,7 +79,7 @@ void OnTick()
    }
 
    CheckRateCondition();
-   Comment(TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES) + " \n" + "Consecutive loss=",g_consecutive_loss," allow trade=",allow_trade," State=",EnumToString(State));
+   if(DebugMode) Comment(TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES) + " \n" + "Consecutive loss=",g_consecutive_loss," allow trade=",allow_trade," State=",EnumToString(State));
    static StateOfRate PreState = State;
 
    double LowerBand = NormalizeDouble((iMA(Symbol(),PERIOD_CURRENT,MAPeriod,0,MODE_EMA,PRICE_CLOSE,0) - MarginPips * g_OnePipValue),Digits);
