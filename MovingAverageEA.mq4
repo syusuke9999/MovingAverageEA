@@ -5,19 +5,21 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2017, Code-Hamamatsu."
 #property link      "https://www.mql5.com"
-#property version   "1.00"
+#property version   "1.30"
 #property strict
 
 //--- input parameters
 
-input int      MAPeriod = 200;      //移動平均線の期間
-input int      MarginPips = 30;     //上下に取るPips
-input int      TP = 10;             //リミット（Pips）
-input int      SL = 30;             //ストップ（Pips）
-input double   InitialLots = 0.01;  //初期ロット
-input int      MagicNumber = 68451; //マジックナンバー
+input int      MAPeriod                = 200;      //移動平均線の期間
+input int      MarginPips              = 30;       //上下に取るPips
+input double   TP                      = 10;       //リミット（Pips）
+input double   SL                      = 30;       //ストップ（Pips）
+input double   InitialLots             = 0.01;     //初期ロット
+input int      MagicNumber             = 68451;    //マジックナンバー
+input int      Consecutive_Loss_Limit  = 3;        //連続負け回数
+input double   Spread                  = 5;        //上限スプレッド
 
-input bool     DebugMode=false;
+input bool     DebugMode=true;
 
 int            g_consecutive_loss;
 double         g_OnePipValue;
@@ -58,6 +60,16 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   if((Ask-Bid) > Spread * g_OnePipValue)
+   {
+      Comment("スプレッドオーバー");
+      //Print("スプレッドが規程の幅より広いため発注しません");
+      return;
+   }
+   else
+   {
+      Comment("");
+   }
    static double balance = AccountBalance();
    static bool   allow_trade = true;
 
@@ -122,14 +134,21 @@ double GetLots(int loss_count)
 {
    double previous_lots = 0.0;
    double lots = InitialLots;
-
-   for(int i=0;i<loss_count;i++)
+   if(Consecutive_Loss_Limit < loss_count)
    {
-      lots = previous_lots + lots * (SL/TP);
-      previous_lots = lots;
+      lots = InitialLots;
+      return(lots);
    }
-   lots = NormalizeDouble(lots,DigitOfLots);
-   return(lots);
+   else
+   {
+      for(int i=0;i<loss_count;i++)
+      {
+         lots = previous_lots + lots * (SL/TP);
+         previous_lots = lots;
+      }
+      lots = NormalizeDouble(lots,DigitOfLots);
+      return(lots);
+   }
 }
 
 void CheckRateCondition()
