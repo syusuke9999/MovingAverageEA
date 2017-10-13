@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2017, Code-Hamamatsu."
 #property link      "https://www.mql5.com"
-#property version   "1.50"
+#property version   "1.51"
 #property strict
 
 //--- input parameters
@@ -167,7 +167,7 @@ bool SendBuyStopOrder()
    double LowerBand  = NormalizeDouble((iMA(Symbol(),PERIOD_CURRENT,MAPeriod,0,MODE_EMA,PRICE_CLOSE,0) - MarginPips * g_OnePipValue),Digits);
    g_StopLossValue   = NormalizeDouble(LowerBand - SL * g_OnePipValue,Digits);
    g_TakeProfitValue = NormalizeDouble(LowerBand + TP * g_OnePipValue,Digits);
-   bool a = OrderSend(Symbol(),OP_BUYSTOP,Lots,LowerBand,3,g_StopLossValue,g_TakeProfitValue,"",MagicNumber,0,clrNONE);
+   bool a = OrderSend(Symbol(),OP_BUYSTOP,Lots,LowerBand,3,g_StopLossValue,g_TakeProfitValue,"",MagicNumber,0,clrBlue);
    return(a);
 }
 
@@ -177,7 +177,7 @@ bool SendSellStopOrder()
    double UPperBand  = NormalizeDouble((iMA(Symbol(),PERIOD_CURRENT,MAPeriod,0,MODE_EMA,PRICE_CLOSE,0) + MarginPips * g_OnePipValue),Digits);
    g_StopLossValue   = NormalizeDouble(UPperBand + SL * g_OnePipValue,Digits);
    g_TakeProfitValue = NormalizeDouble(UPperBand - TP * g_OnePipValue,Digits);
-   bool a = OrderSend(Symbol(),OP_SELLSTOP,Lots,UPperBand,3,g_StopLossValue,g_TakeProfitValue,"",MagicNumber,0,clrNONE);
+   bool a = OrderSend(Symbol(),OP_SELLSTOP,Lots,UPperBand,3,g_StopLossValue,g_TakeProfitValue,"",MagicNumber,0,clrRed);
    return(a);
 }
 
