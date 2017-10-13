@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2017, Code-Hamamatsu."
 #property link      "https://www.mql5.com"
-#property version   "1.51"
+#property version   "1.52"
 #property strict
 
 //--- input parameters
@@ -54,10 +54,23 @@ int OnInit()
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
-  {
-//---
+{
+   //現在のレートの状態をチェックして、State変数にセットする
+   CheckRateCondition();
+   if(State == AboveBand && !HaveOpenPosition())
+   {
+      DeleteSellStopPosition();
+      DeleteBuyStopPosition();
+      SendSellStopOrder();
+   }
+   else if(State == BelowBand && !HaveOpenPosition())
+   {
+      DeleteSellStopPosition();
+      DeleteBuyStopPosition();
+      SendBuyStopOrder();
+   }
 
-  }
+}
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
