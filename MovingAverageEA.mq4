@@ -5,13 +5,13 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2017, Code-Hamamatsu."
 #property link      "https://www.mql5.com"
-#property version   "1.52"
+#property version   "1.53"
 #property strict
 
 //--- input parameters
 
 input int      MAPeriod                = 200;      //移動平均線の期間
-input int      MarginPips              = 30;       //上下に取るPips
+input double   MarginPips              = 30.0;     //上下に取るPips
 input double   TP                      = 10;       //リミット（Pips）
 input double   SL                      = 30;       //ストップ（Pips）
 input double   InitialLots             = 0.01;     //初期ロット
@@ -76,16 +76,6 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   if((Ask-Bid) > Spread * g_OnePipValue)
-   {
-      Comment("スプレッドオーバー");
-      //Print("スプレッドが規程の幅より広いため発注しません");
-      return;
-   }
-   else
-   {
-      Comment("");
-   }
 
    //口座の残高が変化したかどうかチェックする（ポジションが決済されたことを検出する）
    CheckChangeInAccountBalance();
@@ -176,6 +166,15 @@ void CheckIfOrderSendConditionFilled()
 
 bool SendBuyStopOrder()
 {
+   if((Ask-Bid) > Spread * g_OnePipValue)
+   {
+      Comment("スプレッドオーバー");
+      return(false);
+   }
+   else
+   {
+      Comment("");
+   }
    double Lots       = GetLots(g_consecutive_loss);
    double LowerBand  = NormalizeDouble((iMA(Symbol(),PERIOD_CURRENT,MAPeriod,0,MODE_EMA,PRICE_CLOSE,0) - MarginPips * g_OnePipValue),Digits);
    g_StopLossValue   = NormalizeDouble(LowerBand - SL * g_OnePipValue,Digits);
@@ -186,6 +185,15 @@ bool SendBuyStopOrder()
 
 bool SendSellStopOrder()
 {
+   if((Ask-Bid) > Spread * g_OnePipValue)
+   {
+      Comment("スプレッドオーバー");
+      return(false);
+   }
+   else
+   {
+      Comment("");
+   }
    double Lots       = GetLots(g_consecutive_loss);
    double UPperBand  = NormalizeDouble((iMA(Symbol(),PERIOD_CURRENT,MAPeriod,0,MODE_EMA,PRICE_CLOSE,0) + MarginPips * g_OnePipValue),Digits);
    g_StopLossValue   = NormalizeDouble(UPperBand + SL * g_OnePipValue,Digits);
