@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2017, Code-Hamamatsu."
 #property link      "https://www.mql5.com"
-#property version   "1.53"
+#property version   "1.54"
 #property strict
 
 //--- input parameters
@@ -93,8 +93,8 @@ void OnTick()
 void CheckChangeInAccountBalance()
 {
    static double balance = AccountBalance();
-
-   if(balance != AccountBalance())
+   static bool   HaveTheOpenPosition = HaveOpenPosition();
+   if(balance != AccountBalance() && HaveTheOpenPosition != HaveOpenPosition())
    {
       if(!HaveOpenPosition())
       {
@@ -109,6 +109,7 @@ void CheckChangeInAccountBalance()
          }
       }
       balance = AccountBalance();
+      HaveTheOpenPosition= HaveOpenPosition();
    }
    return;
 }
